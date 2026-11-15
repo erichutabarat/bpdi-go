@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/erichutabarat/bpdi-go/internal/createmodule"
+	"github.com/erichutabarat/bpdi-go/internal/createproject"
 	"github.com/spf13/cobra"
 )
 
@@ -16,22 +17,20 @@ var createCMD = &cobra.Command{
 	Use:   "create",
 	Short: "Create Project Folder or Module",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		out := cmd.OutOrStdout()
+
 		if projectName != "" {
-			file, err := os.Create(projectName)
-			if err != nil {
+			if err := createproject.Run(projectName); err != nil {
 				return err
 			}
-			defer file.Close()
-
-			fmt.Fprintf(cmd.OutOrStdout(), "Project %s created!\n", projectName)
+			fmt.Fprintf(out, "Project %s created!\n", projectName)
 		}
 
 		if moduleName != "" {
-			err := os.MkdirAll(moduleName, 0755)
-			if err != nil {
+			if err := createmodule.Run(moduleName); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Module %s created!\n", moduleName)
+			fmt.Fprintf(out, "Module %s created!\n", moduleName)
 		}
 
 		return nil
@@ -56,7 +55,6 @@ func init() {
 	)
 
 	createCMD.MarkFlagsMutuallyExclusive("project", "module")
-
 	createCMD.MarkFlagsOneRequired("project", "module")
 
 	rootCmd.AddCommand(createCMD)
