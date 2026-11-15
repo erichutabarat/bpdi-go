@@ -1,0 +1,30 @@
+package main
+
+import (
+	"log"
+	"net/http"
+
+	"{{.Module}}/internal/config"
+	"{{.Module}}/internal/handler"
+	"{{.Module}}/internal/repository"
+	"{{.Module}}/internal/service"
+)
+
+func main() {
+	// load config
+	cfg := config.Load()
+
+	// load database
+	config.ConnectDB()
+
+	// Dependency injection: repository -> service -> handler
+	userRepo := repository.NewUserRepository()
+	userSvc := service.NewUserService(userRepo)
+	userHandler := handler.NewUserHandler(userSvc)
+
+	mux := http.NewServeMux()
+	userHandler.RegisterRoutes(mux)
+
+	log.Printf("{{.Name}} listening on :%s", cfg.Port)
+	log.Fatal(http.ListenAndServe(":"+cfg.Port, mux))
+}

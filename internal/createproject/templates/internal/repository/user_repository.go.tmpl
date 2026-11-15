@@ -1,0 +1,20 @@
+package repository
+
+import "{{.Module}}/internal/model"
+
+type UserRepository interface {
+	FindAll() ([]model.User, error)
+}
+
+type userRepository struct{}
+
+func NewUserRepository() UserRepository {
+	return &userRepository{}
+}
+
+func (r *userRepository) FindAll() ([]model.User, error) {
+	return []model.User{
+		{ID: 1, Name: "Alice"},
+		{ID: 2, Name: "Bob"},
+	}, nil
+}

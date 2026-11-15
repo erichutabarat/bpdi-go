@@ -1,0 +1,30 @@
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"{{.Module}}/internal/service"
+)
+
+type UserHandler struct {
+	svc service.UserService
+}
+
+func NewUserHandler(svc service.UserService) *UserHandler {
+	return &UserHandler{svc: svc}
+}
+
+func (h *UserHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /users", h.List)
+}
+
+func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
+	users, err := h.svc.List()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
