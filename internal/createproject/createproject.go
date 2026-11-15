@@ -3,6 +3,7 @@ package createproject
 import (
 	"embed"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -20,7 +21,7 @@ type data struct {
 	Module string
 }
 
-func Run(name string) error {
+func Run(out io.Writer, name string) error {
 	// 1. Create project folder
 	if _, err := os.Stat(name); err == nil {
 		return fmt.Errorf("project %q already exists", name)
@@ -28,28 +29,33 @@ func Run(name string) error {
 	if err := os.MkdirAll(name, 0o755); err != nil {
 		return fmt.Errorf("could not create project %q: %w", name, err)
 	}
+	fmt.Fprintf(out, "✔ Created project folder %s\n", name)
 
 	// If anything below fails, remove the half-built project.
-	if err := scaffold(name); err != nil {
+	if err := scaffold(out, name); err != nil {
 		_ = os.RemoveAll(name)
+		fmt.Fprintf(out, "✘ Failed, removed %s\n", name)
 		return err
 	}
 	return nil
 }
 
-func scaffold(dir string) error {
+func scaffold(out io.Writer, dir string) error {
 	d := data{
 		Name:   filepath.Base(dir),
 		Module: filepath.Base(dir),
 	}
 
 	// 2. go mod init
+	fmt.Fprintf(out, "→ Running go mod init %s ...\n", d.Module)
 	if err := goModInit(dir, d.Module); err != nil {
 		return err
 	}
+	fmt.Fprintln(out, "✔ Initialized go.mod")
 
 	// 3 + 4. cmd/server/main.go and internal/* from templates
-	return renderTemplates(dir, d)
+	fmt.Fprintln(out, "→ Generating files ...")
+	return renderTemplates(out, dir, d)
 }
 
 func goModInit(dir, module string) error {
@@ -61,7 +67,7 @@ func goModInit(dir, module string) error {
 	return nil
 }
 
-func renderTemplates(dir string, d data) error {
+func renderTemplates(out io.Writer, dir string, d data) error {
 	return fs.WalkDir(templatesFS, "templates", func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -95,6 +101,8 @@ func renderTemplates(dir string, d data) error {
 		if err := tmpl.Execute(f, d); err != nil {
 			return fmt.Errorf("render %s: %w", rel, err)
 		}
+
+		fmt.Fprintf(out, "  + %s\n", strings.TrimSuffix(rel, ".tmpl"))
 		return nil
 	})
 }

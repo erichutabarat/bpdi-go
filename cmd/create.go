@@ -20,7 +20,7 @@ var createCMD = &cobra.Command{
 		out := cmd.OutOrStdout()
 
 		if projectName != "" {
-			if err := createproject.Run(projectName); err != nil {
+			if err := createproject.Run(out, projectName); err != nil {
 				return err
 			}
 			fmt.Fprintf(out, "Project %s created!\n", projectName)
